@@ -1,6 +1,7 @@
 from aiohttp.web import Response, json_response, Application
 from . import loop
-from .mongoDB import db_setup
+from . import db_setup
+from .spider import all_search
 
 api = Application()
 lessondb = loop.run_until_complete(db_setup())
@@ -11,12 +12,26 @@ async def get_morelesson(request) :
     :param request: 请求对象
     :return:
     """
-    data = await request.json()
-    name = data['name']
-    teacher = data['teacher']
-    les = await lessondb.find_one({'name':name,'teacher':teacher})
-    les['_id'] = str(les['_id'])
-    return json_response(res)
+    legal = ['t','s','name']                               # 所有有可能的URL参数，分别表示老师，学生，课程名
+    reqs = request.rel_url.query_string
+    if reqs == None :
+        return Response(body=b'{"args-error": "null"}',
+                        content_type='application/json', status=400)      # 没有URL参数
+
+    args = {'s':'','t':'','name':''}
+    for item in reqs.split('&') :
+        tmp = item.split('=')
+        if tmp[0] not in legal :
+            return Response(body=b'{"args-error":"not such args"}',
+                            content_type='appllication/json',status=400)        # URL参数错误
+        args[tmp[0]] = tmp[1]
+
+
+    res = await all_search(args)
+    result = {
+        'res' : res
+    }
+    return json_response(result)
 
 
 api.router.add_route('GET','/lesson/',get_morelesson,name='get_morelesson')
