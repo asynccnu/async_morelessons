@@ -4,6 +4,8 @@ from aiohttp import web
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from cryptography import fernet
+from .mongoDB import db_setup
+from .spider import all_search
 
 loop = asyncio.get_event_loop()
 
