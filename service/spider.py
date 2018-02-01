@@ -1,12 +1,12 @@
 import os
 import xlrd
 import asyncio
-from mongoDB import db_setup
+from . import db_setup
 
 loop = asyncio.get_event_loop()
 lessondb = loop.run_until_complete(db_setup())
 Datafrom = os.getenv('DATAFROM') or '选课手册.xls'
-AllLesson = []
+
 
 
 async def read_sheets(sheet,s,e) :
@@ -19,6 +19,7 @@ async def read_sheets(sheet,s,e) :
     """
     for each_sheet in sheet[s:e] :
         await read_eachsheet(each_sheet)
+
 
 
 async def read_eachsheet(sheet) :
@@ -47,9 +48,6 @@ async def read_eachsheet(sheet) :
         where = []
         when = []
 
-        if name not in AllLesson :
-            AllLesson.append(name)
-
         for i in range(3) :
             if len(val[11+2*i])  == 0 :
                 break
@@ -67,6 +65,7 @@ async def read_eachsheet(sheet) :
             print(lesson['name'])
 
 
+
 async def test() :
     """
     多个查询结果的返回
@@ -78,6 +77,7 @@ async def test() :
             break
         await les.fetch_next
         one = les.next_object()
+
 
 
 async def fuzzy_search(keys) :
@@ -92,7 +92,11 @@ async def fuzzy_search(keys) :
         if len(res) == 0 :
             res = one
         else :
-            res = list(set(res).intersection(set(one)))
+            tmp = []
+            for item in res :
+                if item in one :
+                    tmp.append(item)
+            res = tmp
     return res
 
 
@@ -105,30 +109,92 @@ async def search_from_key(key) :
     """
     res = []
     les = lessondb.find({'name':{'$regex':key}})
+    while les.alive :
+        await les.fetch_next
+        one = les.next_object()
+        tmp = detail_lesson(one)
+        if tmp not in res :
+            res.append(tmp)
+    return res
+
+
+
+
+async def search_from_teacher(t,all) :
+    """
+    根据老师姓名查找课程，精确查找
+    :param t: 老师名
+    :return: 符合课程的课程列表
+    """
+    res = []
+    for each in all :
+        if each['teacher'] == t :
+            res.append((each))
+    return res
+
+
+async def search_from_student(s,all) :
+    """
+    根据授课对象（学生），精确查找
+    :param s: 授课对象
+    :return: 符合要求的课程名单
+    """
+    res = []
+    les = lessondb.find({'forwho':{'$regex':s}})
     while True :
         if not les.alive :
             break
         await les.fetch_next
         one = les.next_object()
-        name = one['name']
-        if name not in res :
-            res.append(name)
+        try :
+            tmp = detail_lesson(one)
+        except TypeError :
+            break
+        if tmp in all :
+            res.append(tmp)
     return res
 
 
 
-async def insert_AllLesson() :
+async def all_search(arg) :
     """
-    将所有课的一个列表插入mongodb， 如果已经存在，不需插入
-    :return: None
+    利用所有的筛选条件，获得课程
+    :param args: 所有删选条件的字典
+    :return: 符合条件的课程的列表
     """
-    les = await lessondb.find_one({'isAll': 'True'})
-    if les is None :
-        les = {
-            'isAll' : 'True',
-            'lesson_list' : AllLesson
+    res = await fuzzy_search(arg['name'])
+    if arg['t'] != '' :
+        res = await search_from_teacher(arg['t'],res)
+    if arg['s'] != '' :
+        res = await search_from_student(arg['s'],res)
+    return res
+
+
+
+def detail_lesson(one) :
+    """
+    转化格式
+    :param one: 从mongodb中查询出的一个课程对象
+    :return:
+    """
+    w = []
+    w1 = one['where'].split('|')
+    w2 = one['when'].split('|')
+    for i in range(len(w1)) :
+        ww = {
+            'when' : w2[i],
+            'where' : w1[i]
         }
-        await lessondb.insert_one(les)
+        w.append(ww)
+
+    res = {
+        'name' : one['name'] ,
+        'teacher' : one['teacher'] ,
+        'ww' : w,
+        'forwho' : one['forwho'] ,
+        'rank' : one['rank'] ,
+    }
+    return res
 
 
 if __name__ == '__main__' :
@@ -140,7 +206,12 @@ if __name__ == '__main__' :
     #loop.run_until_complete(insert_AllLesson())
     res = loop.run_until_complete(search_from_key('毛泽东'))
     res1 = loop.run_until_complete(fuzzy_search('马基'))
+    res2 = loop.run_until_complete(search_from_teacher('熊富标'))
+    res3 = loop.run_until_complete(search_from_student('师范'))
+    loop.run_until_complete(detail_lesson(['高等数学A']))
     print(res1)
+    print(res2)
+    print(res3)
     #print(len(AllLesson))
     loop.close()
 
