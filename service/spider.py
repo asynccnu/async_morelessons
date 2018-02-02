@@ -214,6 +214,7 @@ if __name__ == '__main__' :
     data = xlrd.open_workbook(Datafrom)
     data_sheets = data.sheets()
 
+    print(os.getenv('MONGODB_HOST'))
     loop.run_until_complete(read_sheets(data_sheets,0,5))
     #loop.run_until_complete(test())
     #loop.run_until_complete(insert_AllLesson())
