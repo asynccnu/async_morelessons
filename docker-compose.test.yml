@@ -1,0 +1,9 @@
+#-------------------------------async-morelesson-service----------------------
+lesson-api:
+    build: .
+    env_file:
+        - lesson.env
+    command: gunicorn wsgi:app -k aiohttp.worker.GunicornWebWorker -b 0.0.0.0:1295
+    ports:
+        - "1295:1295"
+
