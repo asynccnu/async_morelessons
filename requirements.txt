@@ -1,0 +1,8 @@
+aiohttp==2.3.5
+aiohttp-session==2.0.0
+async-timeout==2.0.0
+lxml==4.1.1
+gunicorn==19.6.0
+motor==1.1
+cryptography==1.7.2
+xlrd==1.0.0
