@@ -1,7 +1,8 @@
 import os
 import xlrd
 import asyncio
-from . import db_setup
+from service.mongoDB import db_setup
+
 
 loop = asyncio.get_event_loop()
 lessondb = loop.run_until_complete(db_setup())
@@ -32,27 +33,37 @@ async def read_eachsheet(sheet) :
     rows = sheet.nrows
     for i in range(1,rows) :
         val = sheet.row_values(i)
+        no = str(val[3])
         if val[0] == '' :
             rank = 2012
             forwho = 'all'
+            if no[3] == '3' :
+                kind = '通选课'
+            elif no[3] == '5' :
+                kind = '通核课'
+            else :
+                kind = '公共课'
+
         else :
             rank = int(val[0])
             forwho = str(val[1])
+            kind = '专业课'
         name = str(val[2])
         lesson = {
             'rank' : rank ,
             'forwho' : forwho ,
             'name' : name,
-            'teacher' : str(val[9])
+            'teacher' : str(val[9]) ,
+            'no' : no ,
+            'kind' : kind ,
         }
         where = []
         when = []
-
         for i in range(3) :
             if len(val[11+2*i])  == 0 :
                 break
-            where.append(str(val[11+2*i]))
-            when.append(str(val[12+2*i]))
+            when.append(str(val[11+2*i]))
+            where.append(str(val[12+2*i]))
 
         where = '|'.join(where)
         when = '|'.join(when)
@@ -60,8 +71,8 @@ async def read_eachsheet(sheet) :
         lesson['when'] = when
 
         les = await lessondb.find_one(lesson)
-        if les is None :
-            les = await lessondb.insert_one(lesson)
+        if les is  None :
+            lessondb.insert_one(lesson)
             print(lesson['name'])
 
 
@@ -82,12 +93,12 @@ async def test() :
 
 async def fuzzy_search(keys) :
     """
-    对某一关键词，分别对其前三个字，在mongodb中查询，对其查询结果取并集
+    对某一关键词，分别对其前四个字，在mongodb中查询，对其查询结果取并集
     :param keys: 关键字
     :return:
     """
     res = []
-    for key in keys[:3] :
+    for key in keys[:4] :
         one = await search_from_key(key)
         if len(res) == 0 :
             res = one
@@ -193,6 +204,8 @@ def detail_lesson(one) :
         'ww' : w,
         'forwho' : one['forwho'] ,
         'rank' : one['rank'] ,
+        'kind' : one['kind'] ,
+        'no' : one['no'] ,
     }
     return res
 
@@ -201,17 +214,17 @@ if __name__ == '__main__' :
     data = xlrd.open_workbook(Datafrom)
     data_sheets = data.sheets()
 
-    #loop.run_until_complete(read_sheets(data_sheets,0,5))
+    loop.run_until_complete(read_sheets(data_sheets,0,5))
     #loop.run_until_complete(test())
     #loop.run_until_complete(insert_AllLesson())
-    res = loop.run_until_complete(search_from_key('毛泽东'))
-    res1 = loop.run_until_complete(fuzzy_search('马基'))
-    res2 = loop.run_until_complete(search_from_teacher('熊富标'))
-    res3 = loop.run_until_complete(search_from_student('师范'))
-    loop.run_until_complete(detail_lesson(['高等数学A']))
-    print(res1)
-    print(res2)
-    print(res3)
+    #res = loop.run_until_complete(search_from_key('毛泽东'))
+    #res1 = loop.run_until_complete(fuzzy_search('马基'))
+    #res2 = loop.run_until_complete(search_from_teacher('熊富标'))
+    #res3 = loop.run_until_complete(search_from_student('师范'))
+    #loop.run_until_complete(detail_lesson(['高等数学A']))
+    #print(res1)
+    #print(res2)
+    #print(res3)
     #print(len(AllLesson))
     loop.close()
 

@@ -1,6 +1,6 @@
 from aiohttp.web import Response, json_response, Application
 from . import loop
-from . import db_setup
+from .mongoDB import db_setup
 from .spider import all_search
 
 api = Application()
