@@ -1,0 +1,103 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: Async Morelesson
+schemes:
+  - https
+paths:
+  /lesson/:
+    get:
+      tags:
+        - lesson
+      summary: Get your lesson you want
+      description: get the lesson by classname, teacher and student.
+      operationId: findPetsByStatus
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: query
+          description: The classname you want
+          required: true
+          type: string
+          collectionFormat: multi
+        - name: t
+          in: query
+          description: The teacher name of the class
+          required: false
+          type: string
+          collectionFormat: multi
+        - name: s
+          in: query
+          description: The object of the class
+          required: false
+          type: string
+          collectionFormat: multi
+      responses:
+        '200':
+          description: get lesson successfully
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Lesson'
+        '400':
+          description: Invalid URL params
+          schema:
+            $ref: '#/definitions/ApiResponse'
+
+definitions:
+
+  Ww:
+    type: object
+    properties:
+      when:
+        type: string
+      where:
+        type: string
+    xml:
+      name: Ww
+  Lesson:
+    type: object
+    required:
+      - res
+    properties:
+      teacher:
+        type: string
+        description: the teacher of the class
+        example: weikaiping
+      name:
+        type: string
+        description: the name of the class
+        example: gaojiyuyanchengxusheji
+      ww:
+        type: array
+        xml:
+          name: tag
+          wrapped: true
+        items:
+          $ref: '#/definitions/Ww'
+      kind:
+        type: string
+        description: the kind of the class
+        enum:
+          - zhuanyeke
+          - gonggongke
+          - tongheke
+          - tongxuanke
+      no:
+        type: string
+        description: the number of the class
+      forwho:
+        type: string
+        description: the object of the class
+      rank:
+        type: string
+        description: the rank of the class
+
+    xml:
+      name: Lesson
+  ApiResponse:
+    type: object
+    properties:
+      message:
+        type: string
