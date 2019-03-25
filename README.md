@@ -15,6 +15,8 @@
    
     MONGODB_HOST=<host>
     MONGODB_PORT=<port>
+    LESSONSET=string
+    LESSONDB=string
     DATAFROM=<datafrom>
    
 
