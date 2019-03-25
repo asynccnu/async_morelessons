@@ -1,12 +1,12 @@
 import os
 import xlrd
 import asyncio
-from service.mongoDB import db_setup
+from mongoDB import db_setup
 
 
 loop = asyncio.get_event_loop()
 lessondb = loop.run_until_complete(db_setup())
-Datafrom = os.getenv('DATAFROM') or '选课手册.xls'
+Datafrom = os.getenv('DATAFROM') or 'class.xls'
 
 
 
@@ -31,39 +31,68 @@ async def read_eachsheet(sheet) :
     """
     print("There is %d rows" % sheet.nrows)
     rows = sheet.nrows
+
+    header = sheet.row_values(0)
+    lesson_index = 9
+    rank_index = 0
+    stu_index = -1
+    name_index = 2
+    num_index = 3
+    teacher_index = 10
+    for i in range(20):
+        try:
+            ss = header[i]
+        except:
+            break
+        if "上课时间1" == header[i]:
+            lesson_index = i
+        if "年级" == header[i]:
+            rank_index = i
+        if "授课对象" == header[i]:
+            stu_index = i
+        if "课程编号" == header[i]:
+            num_index = i
+        if "课程名称" == header[i]:
+            name_index = i
+        if "教室姓名" == header[i]:
+            teacher_index = i
+
     for i in range(1,rows) :
         val = sheet.row_values(i)
-        no = str(val[3])
-        if val[0] == '' :
-            rank = 2012
-            forwho = 'all'
-            if no[3] == '3' :
-                kind = '通选课'
-            elif no[3] == '5' :
-                kind = '通核课'
-            else :
-                kind = '公共课'
-
+        no = str(val[num_index])
+        try:
+            rank = int(val[rank_index])
+        except:
+            rank = 2000
+        if stu_index == -1:
+            forwho = "全体学生"
+        else:
+            forwho = str(val[stu_index])
+        if stu_index != -1:
+            kind = "专业课"
+        elif "通核" in val[name_index] :
+            kind = '通核课'
+        elif int(val[num_index][:2]) > 35:
+            kind = '通选课'
         else :
-            rank = int(val[0])
-            forwho = str(val[1])
-            kind = '专业课'
-        name = str(val[2])
+            kind = '公共课'
+        name = str(val[name_index])
         lesson = {
             'rank' : rank ,
             'forwho' : forwho ,
             'name' : name,
-            'teacher' : str(val[9]) ,
+            'teacher' : str(val[teacher_index]) ,
             'no' : no ,
             'kind' : kind ,
         }
+
         where = []
         when = []
         for i in range(3) :
-            if len(val[11+2*i])  == 0 :
+            if len(val[lesson_index+2*i])  == 0 :
                 break
-            when.append(str(val[11+2*i]))
-            where.append(str(val[12+2*i]))
+            when.append(str(val[lesson_index+2*i]))
+            where.append(str(val[lesson_index+2*i]))
 
         where = '|'.join(where)
         when = '|'.join(when)
@@ -73,7 +102,7 @@ async def read_eachsheet(sheet) :
         les = await lessondb.find_one(lesson)
         if les is  None :
             lessondb.insert_one(lesson)
-            print(lesson['name'])
+            print(lesson['name'], lesson['kind'])
 
 
 
