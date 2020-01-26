@@ -1,7 +1,7 @@
 import os
 import xlrd
 import asyncio
-from mongoDB import db_setup
+from .mongoDB import db_setup
 
 
 loop = asyncio.get_event_loop()
