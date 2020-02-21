@@ -1,5 +1,5 @@
 aiohttp==3.4.0
-aiohttp-session==2.5.1
+aiohttp-session==2.7.0
 async-timeout==2.0.0
 lxml==4.1.1
 gunicorn==19.6.0
