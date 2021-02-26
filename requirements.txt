@@ -1,4 +1,4 @@
-aiohttp==3.4.0
+aiohttp==3.7.4
 aiohttp-session==2.5.1
 async-timeout==2.0.0
 lxml==4.1.1
