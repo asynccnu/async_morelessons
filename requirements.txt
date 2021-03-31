@@ -1,7 +1,7 @@
 aiohttp==3.4.0
 aiohttp-session==2.5.1
 async-timeout==2.0.0
-lxml==4.1.1
+lxml==4.6.3
 gunicorn==19.6.0
 motor==1.1
 cryptography==2.3.1
